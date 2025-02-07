@@ -63,4 +63,4 @@ def detect_high_cpu_usage():
 # Run both file monitoring and CPU monitoring
 if __name__ == "__main__":
     print("[INFO] Starting ransomware detection tool...")
-    start_file_monitoring("/path/to/watch")  # Change to a folder you want to monitor
+    start_file_monitoring("C:\")  # folder you want to monitor
