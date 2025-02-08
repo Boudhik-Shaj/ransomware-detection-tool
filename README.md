@@ -1,7 +1,12 @@
 # ransomware-detection-tool
 ransomeware detection tool to detect ransomware activity by monitoring file operations, system behaviour, and indicators of compromise
 
+##
+Run the following command to install all dependencies:
 
+```bash
+pip install -r requirements.txt
+```
 ## project plan
 Here's a structured approach to guide you:
 
@@ -103,3 +108,21 @@ import logging
 smtplib: A built-in module for sending emails, useful for alerting.
 
 import smtplib
+
+### Running the Script on Linux:
+Save the script as ransomware_detector.py.
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+Run the script:
+```bash
+python3 ransomware_detector.py
+```
+
+If you’re monitoring system directories, may need to use sudo:
+```bash
+sudo python3 ransomware_detector.py
+```
