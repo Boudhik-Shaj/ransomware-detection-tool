@@ -2,26 +2,31 @@ import os
 import time
 import psutil
 import hashlib
+import threading
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
 # Track encrypted files
 encrypted_files = {}
+encrypted_files_lock = threading.Lock()
 
-# Function to detect file encryption (Checks if file contents change abnormally)
+# Function to detect file encryption
 def detect_encryption(file_path):
     try:
+        hasher = hashlib.md5()
         with open(file_path, "rb") as f:
-            file_data = f.read()
-            file_hash = hashlib.md5(file_data).hexdigest()
+            for chunk in iter(lambda: f.read(4096), b""):
+                hasher.update(chunk)
+        file_hash = hasher.hexdigest()
 
+        with encrypted_files_lock:
             if file_path in encrypted_files:
                 if encrypted_files[file_path] != file_hash:
                     print(f"[ALERT] Possible encryption detected: {file_path}")
                     return True
             encrypted_files[file_path] = file_hash
-    except:
-        pass
+    except Exception as e:
+        print(f"[ERROR] Error processing file {file_path}: {e}")
     return False
 
 # File event handler
@@ -49,18 +54,39 @@ def start_file_monitoring(path="."):
         while True:
             time.sleep(2)
     except KeyboardInterrupt:
+        print("[INFO] Stopping file monitoring...")
+        observer.stop()
+    except Exception as e:
+        print(f"[ERROR] Error in file monitoring: {e}")
         observer.stop()
     observer.join()
 
-# Monitor high CPU usage (Possible ransomware encryption process)
+# Monitor high CPU usage
 def detect_high_cpu_usage():
     while True:
-        for process in psutil.process_iter(attrs=['pid', 'name', 'cpu_percent']):
-            if process.info['cpu_percent'] > 70:  # Set a threshold (70% CPU usage)
-                print(f"[ALERT] High CPU Usage detected: {process.info['name']} (PID: {process.info['pid']})")
+        try:
+            for process in psutil.process_iter(attrs=['pid', 'name', 'cpu_percent']):
+                try:
+                    if process.info['cpu_percent'] > 70:  # Set a threshold (70% CPU usage)
+                        print(f"[ALERT] High CPU Usage detected: {process.info['name']} (PID: {process.info['pid']})")
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    continue
+        except Exception as e:
+            print(f"[ERROR] Error in CPU monitoring: {e}")
         time.sleep(5)
 
 # Run both file monitoring and CPU monitoring
 if __name__ == "__main__":
     print("[INFO] Starting ransomware detection tool...")
-    start_file_monitoring("C:\")  # folder you want to monitor
+    
+    # Start file monitoring in the main thread
+    file_monitor_thread = threading.Thread(target=start_file_monitoring, args=(r"C:\\",))
+    file_monitor_thread.start()
+    
+    # Start CPU monitoring in a separate thread
+    cpu_monitor_thread = threading.Thread(target=detect_high_cpu_usage)
+    cpu_monitor_thread.start()
+    
+    # Wait for threads to finish
+    file_monitor_thread.join()
+    cpu_monitor_thread.join()
