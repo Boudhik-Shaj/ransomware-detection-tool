@@ -56,6 +56,8 @@ suspicious_processes = [
     "locky.exe", "ryuk.exe"
 ]
 
+# Get the current username dynamically
+username = os.getenv('USERNAME')
 
 # List of unusual process locations
 unusual_locations = [
