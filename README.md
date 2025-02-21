@@ -8,7 +8,7 @@ Run the following command to install all dependencies:
 pip install -r requirements.txt
 ```
 ## project plan
-Here's a structured approach to guide you:
+Here's a structured approach:
 
 1. Monitor File Operations:
 
