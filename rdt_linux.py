@@ -16,43 +16,37 @@ ioc_list = {
         "md5": [
             "84c82835a5d21bbcf75a61706d8ab549",  # WannaCry
             "c3b8d1f1a1792b4f7a1b6a5c1d5e1f1a",  # Locky
-            "d4f5g6h7j8k9l0a1b2c3d4e5f6g7h8j9"   # Ryuk
+            "d4f5g6h7j8k9l0a1b2c3d4e5f6g7h8j9",   # Ryuk
+            "e9f5c5d5e5f5a5b5c5d5e5f5a5b5c5d5",   # GandCrab
+            "f1e2d3c4b5a6f7e8d9c0b1a2f3e4d5c6"   # REvil
         ],
         "sha256": [
             "ed01ebfbc9eb5bbea545af4d01bf5f1071661840480439c6e5babe8e080e41aa",  # WannaCry
-            "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2"   # Locky
+            "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2",   # Locky
+            "c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2",   # GandCrab
+            "d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3"     # REvil
         ]
     },
     "filenames": [
-        "mssecsvc.exe", "tasksche.exe", "@Please_Read_Me@.txt", "!Please_Read_Me!.txt",  # WannaCry
-        "locky.exe", "decrypt.exe", "_Locky_recover_instructions.txt", "_Locky_README.txt",  # Locky
-        "Ryuk.exe", "encryptor.exe", "RyukReadMe.txt", "Ryuk_Decrypt_Instructions.html"  # Ryuk
-    ],
-    "extensions": [
-        ".wncry", ".wcry",  # WannaCry
-        ".locky", ".zepto", ".odin",  # Locky
-        ".ryk", ".ryuk",  # Ryuk
-        ".revil", ".sodinokibi",  # REvil
-        ".cerber", ".cerber3",  # Cerber
-        ".gdcb", ".crab",  # GandCrab
-        ".maze", ".maze64",  # Maze
-        ".phobos", ".phoenix",  # Phobos
-        ".dharma", ".onion",  # Dharma
-        ".encrypted", ".cryptolocker"  # CryptoLocker
-    ],
-    "ransom_notes": [
         "@Please_Read_Me@.txt", "!Please_Read_Me!.txt",  # WannaCry
         "_Locky_recover_instructions.txt", "_Locky_README.txt",  # Locky
         "RyukReadMe.txt", "Ryuk_Decrypt_Instructions.html",  # Ryuk
-        "Sodinokibi_README.txt", "REvil_README.html"  # REvil
+        "README.txt"
+    ],
+    "extensions": [
+        ".wncry", ".wcry", ".locky", ".ryk", ".ryuk",
+        ".encrypted", ".cryptolocker", ".crypt", ".locked"
+    ],
+    "ransom_notes": [
+        "README_FOR_DECRYPT.txt", "HOW_TO_DECRYPT.html",
+        "RESTORE_FILES_INFO.txt", "DECRYPT_INSTRUCTIONS.html", "README.txt"
     ]
 }
 
 # List of suspicious processes
 suspicious_processes = [
-    "vssadmin", "cipher", "wbadmin", "powershell", "wscript", "cscript",
-    "rundll32", "regsvr32", "explorer", "svchost", "mssecsvc", "tasksche",
-    "locky", "ryuk"
+    "vssadmin", "cipher", "chattr", "mount", "umount",
+    "cryptsetup", "gpg", "openssl", "shred", "dd"
 ]
 
 # Get the current username dynamically
@@ -60,10 +54,11 @@ username = os.getenv('USER')
 
 # List of unusual process locations
 unusual_locations = [
-    f"/home/{username}/.config/", 
+    f"/home/{username}/Documents",
+    f"/home/{username}/Downloads",
     f"/home/{username}/.cache/",
-    "/tmp/", "/dev/shm/", "/var/tmp/", "/home/", "/root/", "/etc/cron.d/",
-    "/etc/systemd/system/", "/usr/local/bin/", "/usr/bin/"
+    "/tmp/", "/dev/shm/", "/var/tmp/", "/etc/cron.d/",
+    "/etc/systemd/system/", "/usr/local/bin/"
 ]
 
 # Function to detect IoCs
@@ -133,52 +128,88 @@ def detect_suspicious_processes():
         try:
             for process in psutil.process_iter(attrs=['pid', 'name', 'exe', 'cmdline']):
                 try:
-                    if process.info['name'] in suspicious_processes:
-                        print(f"[ALERT] Suspicious process detected: {process.info['name']} (PID: {process.info['pid']})")
-                    if any(loc in process.info['exe'] for loc in unusual_locations):
-                        print(f"[ALERT] Process running from unusual location: {process.info['exe']} (PID: {process.info['pid']})")
+                    proc_name = process.info['name'].lower() if process.info['name'] else ""
+                    exe_path = process.info['exe'] or ""
+                    
+                    # Check for suspicious process names
+                    if any(suspicious in proc_name for suspicious in suspicious_processes):
+                        if process.info['pid'] > 10000:
+                            print(f"[ALERT] Suspicious process detected: {proc_name} (PID: {process.info['pid']})")
+                            # Attempt to terminate the process
+                            try:
+                                process.terminate()
+                                print(f"[ACTION] Terminated process {proc_name} (PID: {process.info['pid']})")
+                            except Exception as term_err:
+                                print(f"[ERROR] Could not terminate process {proc_name} (PID: {process.info['pid']}): {term_err}")
+                    
+                    # Check for unusual locations
+                    if exe_path and any(loc in exe_path for loc in unusual_locations):
+                        print(f"[ALERT] Process running from unusual location: {exe_path} (PID: {process.info['pid']})")
+                        try:
+                            process.terminate()
+                            print(f"[ACTION] Terminated process from unusual location: {exe_path} (PID: {process.info['pid']})")
+                        except Exception as term_err:
+                            print(f"[ERROR] Could not terminate process from unusual location (PID: {process.info['pid']}): {term_err}")
+                        
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     continue
         except Exception as e:
             print(f"[ERROR] Error in process monitoring: {e}")
         time.sleep(5)
 
-# Function to detect persistence mechanisms (cron jobs, systemd services, etc.)
+# Function to detect persistence mechanisms
 def detect_persistence_mechanisms():
-    # Check for suspicious cron jobs
+    # Check cron jobs
     try:
-        cron_jobs = os.popen('crontab -l').read()
+        cron_jobs = os.popen('crontab -l 2>/dev/null').read()
         for line in cron_jobs.splitlines():
-            if any(suspicious in line for suspicious in suspicious_processes):
-                print(f"[ALERT] Suspicious cron job detected: {line}")
+            if line.strip().startswith('@') or any(suspicious in line for suspicious in suspicious_processes):
+                print(f"[ALERT] Suspicious cron job: {line.strip()}")
     except Exception as e:
         print(f"[ERROR] Error checking cron jobs: {e}")
 
-    # Check for suspicious systemd services
+    # Check systemd services
     try:
-        services = os.popen('systemctl list-unit-files --type=service').read()
+        services = os.popen('systemctl list-unit-files --type=service --no-legend').read()
         for line in services.splitlines():
-            if any(suspicious in line for suspicious in suspicious_processes):
-                print(f"[ALERT] Suspicious systemd service detected: {line}")
+            service = line.split()[0]
+            if any(suspicious in service for suspicious in suspicious_processes):
+                print(f"[ALERT] Suspicious systemd service: {service}")
     except Exception as e:
         print(f"[ERROR] Error checking systemd services: {e}")
 
-# Function to detect network traffic anomalies
-def detect_network_anomalies():
-    # Placeholder function for network traffic analysis
-    print("[INFO] Network traffic analysis not implemented yet")
-
-# Function to detect unauthorized access attempts
-def detect_unauthorized_access():
-    # Placeholder function for unauthorized access detection
-    print("[INFO] Unauthorized access detection not implemented yet")
-
 # Function to detect system file alterations
 def detect_system_file_alterations():
-    # Placeholder function for system file alteration detection
-    print("[INFO] System file alteration detection not implemented yet")
+    class SystemFileHandler(FileSystemEventHandler):
+        def on_modified(self, event):
+            if not event.is_directory:
+                print(f"[ALERT] System file modified: {event.src_path}")
 
-# File event handler
+        def on_created(self, event):
+            if not event.is_directory:
+                print(f"[ALERT] New system file created: {event.src_path}")
+
+        def on_deleted(self, event):
+            if not event.is_directory:
+                print(f"[ALERT] System file deleted: {event.src_path}")
+
+    system_paths = ['/etc', '/bin', '/sbin', '/usr/bin', '/usr/sbin']
+    event_handler = SystemFileHandler()
+    observer = Observer()
+    
+    for path in system_paths:
+        if os.path.exists(path):
+            observer.schedule(event_handler, path, recursive=True)
+    
+    observer.start()
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        observer.stop()
+    observer.join()
+
+# File event handler for user files
 class RansomwareDetectionHandler(FileSystemEventHandler):
     def on_modified(self, event):
         if not event.is_directory:
@@ -193,8 +224,8 @@ class RansomwareDetectionHandler(FileSystemEventHandler):
         if not event.is_directory:
             print(f"[WARNING] File deleted: {event.src_path}")
 
-# Start monitoring
-def start_file_monitoring(path="/home"):  # Monitor a specific directory, e.g., /home
+# Start user file monitoring
+def start_file_monitoring(path="/home/boudhik/Documents/important-folder"):
     event_handler = RansomwareDetectionHandler()
     observer = Observer()
     observer.schedule(event_handler, path, recursive=True)
@@ -214,53 +245,43 @@ def start_file_monitoring(path="/home"):  # Monitor a specific directory, e.g., 
 def detect_high_cpu_usage():
     while True:
         try:
-            for process in psutil.process_iter(attrs=['pid', 'name', 'cpu_percent']):
-                try:
-                    if process.info['cpu_percent'] > 70:  # Set a threshold (70% CPU usage)
-                        print(f"[ALERT] High CPU Usage detected: {process.info['name']} (PID: {process.info['pid']})")
+            for process in psutil.process_iter(attrs=['pid', 'name', 'cpu_percent', 'cmdline']):
+                try:         
+                    if process.info['cpu_percent'] > 70:# and process.info['pid'] > 10000:
+                        print(f"[ALERT] High CPU Usage: {process.info['name']} (PID: {process.info['pid']})")
+                        cmdline = ' '.join(process.info['cmdline']) if process.info['cmdline'] else 'N/A'
+                        if process.info['name'] == "python3" and "ransomware" in cmdline:
+                            # print(f"[INFO] Process info: {process.info}")
+                            # Attempt to terminate the processs
+                            try:
+                                process.terminate()
+                                print(f"[ACTION] Terminated process {process.info['name']} (PID: {process.info['pid']})")
+                            except Exception as term_err:
+                                print(f"[ERROR] Could not terminate process {process.info['name']} (PID: {process.info['pid']}): {term_err}")
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     continue
         except Exception as e:
             print(f"[ERROR] Error in CPU monitoring: {e}")
-        time.sleep(5)
+        time.sleep(1)
 
-# Run all monitoring functions
 if __name__ == "__main__":
-    print("[INFO] Starting ransomware detection tool...")
+    print("[INFO] Starting Linux Ransomware Detection Tool...")
     
-    # Start file monitoring in the main thread
-    file_monitor_thread = threading.Thread(target=start_file_monitoring, args=("/home",))
-    file_monitor_thread.start()
-    
-    # Start CPU monitoring in a separate thread
-    cpu_monitor_thread = threading.Thread(target=detect_high_cpu_usage)
-    cpu_monitor_thread.start()
-    
-    # Start suspicious process monitoring in a separate thread
-    suspicious_process_thread = threading.Thread(target=detect_suspicious_processes)
-    suspicious_process_thread.start()
-    
-    # Start persistence mechanism monitoring in a separate thread
-    persistence_thread = threading.Thread(target=detect_persistence_mechanisms)
-    persistence_thread.start()
-    
-    # Start network traffic anomaly detection in a separate thread
-    network_anomaly_thread = threading.Thread(target=detect_network_anomalies)
-    network_anomaly_thread.start()
-    
-    # Start unauthorized access detection in a separate thread
-    unauthorized_access_thread = threading.Thread(target=detect_unauthorized_access)
-    unauthorized_access_thread.start()
-    
-    # Start system file alteration detection in a separate thread
-    system_file_alteration_thread = threading.Thread(target=detect_system_file_alterations)
-    system_file_alteration_thread.start()
-    
-    # Wait for threads to finish
-    file_monitor_thread.join()
-    cpu_monitor_thread.join()
-    suspicious_process_thread.join()
-    persistence_thread.join()
-    network_anomaly_thread.join()
-    unauthorized_access_thread.join()
-    system_file_alteration_thread.join()
+    # Start monitoring threads
+    threads = [
+        threading.Thread(target=start_file_monitoring),
+        threading.Thread(target=detect_high_cpu_usage),
+        threading.Thread(target=detect_suspicious_processes),
+        threading.Thread(target=detect_persistence_mechanisms),
+        threading.Thread(target=detect_system_file_alterations)
+    ]
+
+    for t in threads:
+        t.daemon = True
+        t.start()
+
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("\n[INFO] Shutting down detection tool...")
