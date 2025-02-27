@@ -193,7 +193,7 @@ def detect_system_file_alterations():
             if not event.is_directory:
                 print(f"[ALERT] System file deleted: {event.src_path}")
 
-    system_paths = ['/etc', '/bin', '/sbin', '/usr/bin', '/usr/sbin']
+    system_paths = ['/etc', '/bin', '/sbin', '/usr/bin', '/usr/sbin', '/home/boudhik/Documents/important-folder']
     event_handler = SystemFileHandler()
     observer = Observer()
     
