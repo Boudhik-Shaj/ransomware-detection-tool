@@ -1,128 +1,90 @@
-# ransomware-detection-tool
-ransomeware detection tool to detect ransomware activity by monitoring file operations, system behaviour, and indicators of compromise
+# 🛡️ Linux Ransomware Detection Tool
 
-##
-Run the following command to install all dependencies:
+## 📌 Overview
 
-```bash
-pip install -r requirements.txt
-```
-## project plan
-Here's a structured approach:
+The **Linux Ransomware Detection Tool** is a security monitoring system designed to detect, alert, and mitigate potential ransomware attacks in real time. It continuously monitors file modifications, detects suspicious processes, identifies persistence mechanisms, and analyzes system file changes to prevent encryption-based attacks.
 
-1. Monitor File Operations:
+## 🚀 Features
 
-File Access Patterns: Track processes that open numerous files in a short period, as ransomware often encrypts multiple files rapidly.
-File Modifications: Detect unexpected file modifications, such as changes in file extensions or content encryption.
-File Creation and Deletion: Identify the creation of ransom notes or the deletion of shadow copies, which are common ransomware behaviors.
+✅ **Real-time File Monitoring**: Tracks file modifications and detects encryption attempts.
+✅ **Suspicious Process Detection**: Identifies and terminates potential ransomware processes.
+✅ **Persistence Mechanism Detection**: Flags unauthorized cron jobs and systemd services.
+✅ **System File Integrity Check**: Alerts on system file modifications in critical directories.
+✅ **High CPU Usage Monitoring**: Detects and kills high-resource-consuming ransomware processes.
+✅ **IoC-Based Threat Detection**: Uses a list of known ransomware indicators (hashes, filenames, extensions, ransom notes).
 
-2. Analyze System Behavior:
+## 🛠️ Installation
 
-Process Monitoring: Observe processes for abnormal activities, like unauthorized access to sensitive directories or the execution of unknown binaries.
-Registry Changes: Detect unauthorized modifications to the system registry, which may indicate attempts to establish persistence.
-Service and Driver Installation: Monitor the installation of new services or drivers that could be malicious.
-
-3. Identify Indicators of Compromise (IoCs):
-
-Network Traffic Anomalies: Analyze outbound traffic for unusual patterns, such as communication with known malicious IP addresses or command-and-control servers.
-Unauthorized Access Attempts: Detect repeated failed login attempts or access from unfamiliar locations.
-System File Alterations: Monitor critical system files for unexpected changes, which could signify compromise.
-
-4. Implement Detection Techniques:
-
-Signature-Based Detection: Utilize known malware signatures to identify specific ransomware strains.
-Behavior-Based Detection: Focus on identifying malicious behaviors, such as rapid file encryption or disabling security features.
-Deception-Based Detection: Deploy honeypots or decoy files to lure ransomware and observe its behavior in a controlled environment.
-
-5. Develop the Detection Tool:
-
-Programming Language: Use a language like Python for its extensive libraries and community support.
-File System Monitoring: Implement modules to monitor file system changes in real-time.
-Process and Registry Monitoring: Use system APIs to track process activities and registry modifications.
-Network Monitoring: Incorporate network analysis tools to inspect traffic for anomalies.
-
-### for Windows
-
-1. File System Monitoring:
-
-Watchdog: A cross-platform library that monitors file system events, such as file creation, modification, and deletion, in real-time.
-
-pip install watchdog
-
-2. System Behavior Monitoring:
-
-Psutil: A cross-platform library for retrieving information on running processes and system utilization (CPU, memory, disks, network, sensors).
-
-pip install psutil
-
-3. Registry Monitoring (Windows-specific):
-
-winreg: A built-in Python module for accessing and modifying the Windows registry.
-
-import winreg
-
-4. Network Traffic Monitoring:
-
-Scapy: A powerful Python library used for network traffic analysis and packet manipulation.
-
-pip install scapy
-
-5. Logging and Alerting:
-
-##### Logging: Python's built-in logging module to record events for analysis.
-
-import logging
-
-##### smtplib: A built-in module for sending emails, useful for alerting.
-
-import smtplib
-
-### for linux
-
-1. File System Monitoring:
-
-PyInotify: A Python module for monitoring filesystem events on Linux systems, leveraging the inotify subsystem.
-
-pip install pyinotify
-
-2. System Behavior Monitoring:
-
-Psutil: A cross-platform library for retrieving information on running processes and system utilization (CPU, memory, disks, network, sensors).
-
-pip install psutil
-
-
-3. Network Traffic Monitoring:
-
-Scapy: A powerful Python library used for network traffic analysis and packet manipulation.
-
-pip install scapy
-
-
-4. Logging and Alerting:
-
-Logging: Python's built-in logging module to record events for analysis.
-
-import logging
-
-smtplib: A built-in module for sending emails, useful for alerting.
-
-import smtplib
-
-### Running the Script on Linux:
-Save the script as ransomware_detector.py.
-
-Install dependencies:
+### **1. Clone the Repository**
 
 ```bash
-pip install -r requirements.txt
-```
-Run the script:
-```bash
-python3 ransomware_detector.py
+git clone https://github.com/Boudhik-Shaj/ransomware-detection-tool.git
+cd linux-ransomware-detection
 ```
 
-If you’re monitoring system directories, may need to use sudo:
-```bash
-sudo python3 ransomware_detector.py
-```
+### **2. Linux Installation Steps**
+
+1. Ensure you have **Python 3** installed:
+   ```bash
+   sudo apt update && sudo apt install python3 python3-pip -y
+   ```
+2. Install required dependencies:
+   ```bash
+   pip3 install -r requirements.txt
+   ```
+3. Run the tool:
+   ```bash
+   python3 rdt_linux.py
+   ```
+
+## ⚙️ Configuration
+
+- Modify the **monitored directory** in `start_file_monitoring(path)` to protect specific folders.
+- Update **IoCs** (`ioc_list` dictionary) to include new ransomware indicators.
+- Customize **CPU usage threshold** in `detect_high_cpu_usage()` for better performance.
+
+## 🔍 How It Works
+
+### **File Encryption Detection**
+
+- Computes file hashes to detect unauthorized modifications.
+- Monitors for common ransomware file extensions.
+- Alerts when ransom notes appear in directories.
+
+### **Process Monitoring**
+
+- Checks running processes for suspicious names and execution paths.
+- Terminates known ransomware-associated processes.
+
+### **Persistence Mechanisms**
+
+- Scans cron jobs and systemd services for malicious entries.
+- Detects unauthorized scripts set to execute on startup.
+
+### **System File Alteration Detection**
+
+- Monitors critical directories (`/etc`, `/usr/bin`, etc.).
+- Alerts when system files are modified or deleted.
+
+### **High CPU Usage Detection**
+
+- Identifies processes consuming excessive CPU (possible encryption activity).
+- Terminates high-usage Python-based ransomware processes.
+
+
+## 🛡️ Security Recommendations
+
+- Run the tool with **root privileges** for complete process monitoring.
+- Regularly update **IoC lists** to detect new ransomware variants.
+- Enable **automated alerts** (email, webhook) for real-time notifications.
+
+
+## 📜 License
+
+This project is licensed under the **MIT License**.
+
+
+---
+
+⚠️ **Disclaimer:** This tool is intended for security research and educational purposes only. Use it responsibly!
+
